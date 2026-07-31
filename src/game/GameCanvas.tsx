@@ -1,10 +1,13 @@
 import { useEffect, useRef } from 'react';
 import Phaser from 'phaser';
 import { getScenario, type Century, type Faction } from '../content/scenarios';
-import { loadRegionsFromTmx } from './mapLoader';
+import { loadRegionsFromGeoJson } from './geojsonLoader';
 import { renderMap } from './mapRenderer';
 import { cities } from './cities';
-import tmxMap from '../content/map.tmx?raw';
+import europeGeoJson from '../content/europe.geojson?raw';
+
+const MAP_WIDTH = 1120;
+const MAP_HEIGHT = 800;
 
 type GameCanvasProps = {
   century: Century;
@@ -30,13 +33,21 @@ function pointInPolygon(px: number, py: number, points: { x: number; y: number }
   return inside;
 }
 
+function projectLon(lon: number): number {
+  return ((lon + 10) / 50) * MAP_WIDTH;
+}
+
+function projectLat(lat: number): number {
+  return ((65 - lat) / 35) * MAP_HEIGHT;
+}
+
 function SceneBoot(
   this: Phaser.Scene,
   props: { century: Century; ownership: Record<string, string>; factions: Faction[]; playerFactionId: string; onCapture: (regionId: string) => void },
 ) {
   const { century, ownership, factions, onCapture } = props;
   const scenario = getScenario(century);
-  const regions = loadRegionsFromTmx(tmxMap);
+  const regions = loadRegionsFromGeoJson(europeGeoJson, MAP_WIDTH, MAP_HEIGHT);
 
   const ownershipColors: Record<string, number> = {};
   const factionMap = new Map(factions.map((f) => [f.id, f]));
@@ -51,12 +62,14 @@ function SceneBoot(
   cities
     .filter((c) => ownership[c.regionId] !== undefined || c.regionId === 'africa')
     .forEach((city) => {
+      const cx = Math.round(projectLon(city.lon));
+      const cy = Math.round(projectLat(city.lat));
       const mark = this.add.graphics();
       mark.fillStyle(0xf8f2e8, 1);
-      mark.fillCircle(city.x, city.y, 5);
+      mark.fillCircle(cx, cy, 5);
       mark.lineStyle(2, 0x2d2924, 1);
-      mark.strokeCircle(city.x, city.y, 5);
-      this.add.text(city.x + 9, city.y - 6, city.name, {
+      mark.strokeCircle(cx, cy, 5);
+      this.add.text(cx + 9, cy - 6, city.name, {
         color: '#2d2924',
         fontFamily: 'Georgia',
         fontSize: '11px',
@@ -88,8 +101,8 @@ export function GameCanvas({ century, ownership, factions, playerFactionId, onCa
     const game = new Phaser.Game({
       type: Phaser.AUTO,
       parent: containerRef.current,
-      width: 1120,
-      height: 800,
+      width: MAP_WIDTH,
+      height: MAP_HEIGHT,
       backgroundColor: '#d8e0dc',
       scene: {
         create() {

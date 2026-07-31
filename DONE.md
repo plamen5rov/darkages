@@ -20,3 +20,11 @@
   `src/setup/KingdomSelect.tsx`, `src/setup/RulerSelect.tsx`,
   `src/store/gameSetup.ts`, `src/simulation/turnState.ts`,
   `src/vite-env.d.ts`.
+
+- [2026-07-31] Replace hand-drawn map polygons with a GeoJSON-authored Europe
+  map using real WGS84 geographic coordinates and equirectangular projection.
+  Document the three map technology options in MAP_OPTIONS.md.
+  Files modified: `AGENTS.md`, `src/game/GameCanvas.tsx`,
+  `src/game/cities.ts`, `src/vite-env.d.ts`.
+  Files added: `src/content/europe.geojson`, `src/game/geojsonLoader.ts`,
+  `MAP_OPTIONS.md`.

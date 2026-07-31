@@ -35,8 +35,9 @@
 - Setup selects a century from 5-15, then a kingdom and ruler.
 - The first playable slice needs one simplified map, two factions, units,
   movement, turns, combat, capture, and visible ownership changes.
-- The current prototype uses a Tiled-authored map with 20 historical regions
-  and polygon object layers; the TMX is loaded and rendered in Phaser.
+- The current prototype uses a GeoJSON-authored map with 20 historically
+  accurate European regions. Coordinates are projected from WGS84 to Phaser
+  screen space with an equirectangular projection.
 - Defer persistence, advanced AI, research, diplomacy, multiplayer, modding,
   deep events, and detailed historical accuracy until the core loop is stable.
 
