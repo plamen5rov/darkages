@@ -7,7 +7,8 @@ through a selected century from 5 through 15.
 
 The project is an early prototype. The current build includes century selection
 (5-15), kingdom and historical ruler selection per century, and a
-Tiled-authored 20-region Europe map with click-to-capture territory control.
+Leaflet-rendered 20-region Europe map (Natural Earth data) with
+click-to-capture territory control.
 
 ## Quickstart
 
@@ -34,9 +35,9 @@ npm run preview
 
 - TypeScript and Vite
 - React for setup and interface screens
-- Phaser 3 for the map and game rendering
+- Leaflet and react-leaflet for geographic map rendering
+- Phaser 3 available for future unit and combat rendering
 - Zustand for setup and presentation state
-- Tiled Map Editor for the Europe region map
 
 ## Roadmap
 
