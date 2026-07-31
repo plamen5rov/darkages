@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { GameCanvas } from './game/GameCanvas';
+import { LeafletMap } from './game/LeafletMap';
 import { getScenario, type Century } from './content/scenarios';
 import { KingdomSelect } from './setup/KingdomSelect';
 import { RulerSelect } from './setup/RulerSelect';
@@ -43,14 +43,12 @@ function GameScreen() {
   const scenario = getScenario(century);
 
   const [ownership, setOwnership] = useState<Record<string, string>>({ ...scenario.ownership });
-  const [updateKey, setUpdateKey] = useState(0);
 
   const handleCapture = useCallback((regionId: string) => {
     setOwnership((prev) => {
       if (!kingdom || prev[regionId] === kingdom.id) return prev;
       return { ...prev, [regionId]: kingdom.id };
     });
-    setUpdateKey((k) => k + 1);
   }, [kingdom]);
 
   if (!kingdom || !ruler) return null;
@@ -67,13 +65,11 @@ function GameScreen() {
           New campaign
         </button>
       </div>
-      <GameCanvas
-        century={century}
+      <LeafletMap
         ownership={ownership}
         factions={scenario.factions}
         playerFactionId={kingdom.id}
         onCapture={handleCapture}
-        updateKey={updateKey}
       />
       <p className="map-note">
         Click an enemy region to capture it. Active faction: {kingdom.name}. {scenario.note}

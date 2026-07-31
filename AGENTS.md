@@ -38,6 +38,9 @@
 - The current prototype uses a GeoJSON-authored map with 20 historically
   accurate European regions. Coordinates are projected from WGS84 to Phaser
   screen space with an equirectangular projection.
+- Map rendering now uses Leaflet via react-leaflet for proper Mercator
+  projection, tile layers, and SVG polygon rendering. Phaser remains
+  available for future unit and combat rendering.
 - Defer persistence, advanced AI, research, diplomacy, multiplayer, modding,
   deep events, and detailed historical accuracy until the core loop is stable.
 

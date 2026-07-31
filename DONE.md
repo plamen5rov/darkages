@@ -28,3 +28,12 @@
   `src/game/cities.ts`, `src/vite-env.d.ts`.
   Files added: `src/content/europe.geojson`, `src/game/geojsonLoader.ts`,
   `MAP_OPTIONS.md`.
+
+- [2026-07-31] Switch map rendering to Leaflet via react-leaflet with proper
+  Mercator projection, CartoDB tile layer, and SVG polygon rendering from
+  Natural Earth 50m geographic data (20 regions, 1,942 vertices).
+  Files modified: `AGENTS.md`, `package.json`, `package-lock.json`,
+  `src/App.tsx`, `src/styles.css`.
+  Files added: `src/game/LeafletMap.tsx`,
+  `src/content/europe_regions.json`.
+  Files removed: `src/content/europe.geojson`.
