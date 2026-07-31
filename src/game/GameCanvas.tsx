@@ -1,53 +1,101 @@
 import { useEffect, useRef } from 'react';
 import Phaser from 'phaser';
+import { getScenario, type Century, type Faction } from '../content/scenarios';
+import { loadRegionsFromTmx } from './mapLoader';
+import { renderMap } from './mapRenderer';
+import { cities } from './cities';
+import tmxMap from '../content/map.tmx?raw';
 
-function PrototypeScene(this: Phaser.Scene) {
-  const graphics = this.add.graphics();
-  const width = this.scale.width;
-  const height = this.scale.height;
-  const colors = [0x8f473e, 0xb8794d, 0x607a68, 0x344e5c, 0xb6a26a];
-  const columns = 5;
-  const rows = 3;
-  const cellWidth = width / columns;
-  const cellHeight = height / rows;
+type GameCanvasProps = {
+  century: Century;
+  ownership: Record<string, string>;
+  factions: Faction[];
+  playerFactionId: string;
+  onCapture: (regionId: string) => void;
+  updateKey: number;
+};
 
-  graphics.fillStyle(0xe8e0d2, 1);
-  graphics.fillRect(0, 0, width, height);
-
-  for (let row = 0; row < rows; row += 1) {
-    for (let column = 0; column < columns; column += 1) {
-      const x = column * cellWidth + 2;
-      const y = row * cellHeight + 2;
-      const index = (row * columns + column) % colors.length;
-      graphics.fillStyle(colors[index], 1);
-      graphics.fillRoundedRect(x, y, cellWidth - 4, cellHeight - 4, 8);
-      graphics.lineStyle(1, 0xeee7da, 0.7);
-      graphics.strokeRoundedRect(x, y, cellWidth - 4, cellHeight - 4, 8);
+function pointInPolygon(px: number, py: number, points: { x: number; y: number }[]): boolean {
+  let inside = false;
+  const n = points.length;
+  for (let i = 0, j = n - 1; i < n; j = i++) {
+    const xi = points[i].x;
+    const yi = points[i].y;
+    const xj = points[j].x;
+    const yj = points[j].y;
+    if ((yi > py) !== (yj > py) && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) {
+      inside = !inside;
     }
   }
+  return inside;
+}
 
-  this.add.text(24, 20, 'EUROPE / PROTOTYPE MAP', {
-    color: '#f8f2e8',
-    fontFamily: 'Arial',
-    fontSize: '12px',
-    fontStyle: 'bold',
-    letterSpacing: 2,
+function SceneBoot(
+  this: Phaser.Scene,
+  props: { century: Century; ownership: Record<string, string>; factions: Faction[]; playerFactionId: string; onCapture: (regionId: string) => void },
+) {
+  const { century, ownership, factions, onCapture } = props;
+  const scenario = getScenario(century);
+  const regions = loadRegionsFromTmx(tmxMap);
+
+  const ownershipColors: Record<string, number> = {};
+  const factionMap = new Map(factions.map((f) => [f.id, f]));
+
+  for (const [regionId, factionId] of Object.entries(ownership)) {
+    const faction = factionMap.get(factionId);
+    if (faction) ownershipColors[regionId] = faction.color;
+  }
+
+  renderMap(this, regions, ownershipColors, century, scenario.title);
+
+  cities
+    .filter((c) => ownership[c.regionId] !== undefined || c.regionId === 'africa')
+    .forEach((city) => {
+      const mark = this.add.graphics();
+      mark.fillStyle(0xf8f2e8, 1);
+      mark.fillCircle(city.x, city.y, 5);
+      mark.lineStyle(2, 0x2d2924, 1);
+      mark.strokeCircle(city.x, city.y, 5);
+      this.add.text(city.x + 9, city.y - 6, city.name, {
+        color: '#2d2924',
+        fontFamily: 'Georgia',
+        fontSize: '11px',
+        fontStyle: 'bold',
+        stroke: '#f8f2e8',
+        strokeThickness: 3,
+      });
+    });
+
+  this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+    const clicked = regions.find((region) => pointInPolygon(pointer.x, pointer.y, region.points));
+    if (!clicked) return;
+
+    const currentOwner = ownership[clicked.id];
+    if (currentOwner !== undefined && currentOwner !== props.playerFactionId) {
+      onCapture(clicked.id);
+    }
   });
 }
 
-export function GameCanvas() {
+export function GameCanvas({ century, ownership, factions, playerFactionId, onCapture, updateKey }: GameCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!containerRef.current) return undefined;
 
+    const props = { century, ownership, factions, playerFactionId, onCapture };
+
     const game = new Phaser.Game({
       type: Phaser.AUTO,
       parent: containerRef.current,
-      width: 900,
-      height: 520,
-      backgroundColor: '#e8e0d2',
-      scene: { create: PrototypeScene },
+      width: 1120,
+      height: 800,
+      backgroundColor: '#d8e0dc',
+      scene: {
+        create() {
+          SceneBoot.call(this, props);
+        },
+      },
       scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
@@ -55,7 +103,8 @@ export function GameCanvas() {
     });
 
     return () => game.destroy(true);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [updateKey]);
 
   return <div className="game-canvas" ref={containerRef} />;
 }

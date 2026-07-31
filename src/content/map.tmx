@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal"
+     renderorder="right-down" width="80" height="50"
+     tilewidth="20" tileheight="20" infinite="0"
+     nextlayerid="2" nextobjectid="21">
+ <objectgroup id="1" name="regions">
+  <object id="1" name="Britannia" type="region">
+   <polygon points="290,190 330,170 370,180 400,200 420,220 410,270 390,310 360,340 330,350 310,330 300,300 290,260 280,220"/>
+   <properties>
+    <property name="regionId" value="britannia"/>
+   </properties>
+  </object>
+  <object id="2" name="Caledonia" type="region">
+   <polygon points="280,110 340,90 380,120 390,150 370,180 330,170 290,160 270,140"/>
+   <properties>
+    <property name="regionId" value="caledonia"/>
+   </properties>
+  </object>
+  <object id="3" name="Hibernia" type="region">
+   <polygon points="190,200 230,180 270,190 280,230 270,270 250,310 220,330 190,320 170,290 160,250 170,220"/>
+   <properties>
+    <property name="regionId" value="hibernia"/>
+   </properties>
+  </object>
+  <object id="4" name="Gallia" type="region">
+   <polygon points="320,250 380,240 440,260 480,290 500,320 520,340 510,370 480,390 430,410 380,400 340,380 310,350 300,310 310,280"/>
+   <properties>
+    <property name="regionId" value="gallia"/>
+   </properties>
+  </object>
+  <object id="5" name="Aquitania" type="region">
+   <polygon points="280,360 320,350 360,360 390,390 430,410 400,450 360,480 300,490 260,470 240,430 250,390"/>
+   <properties>
+    <property name="regionId" value="aquitania"/>
+   </properties>
+  </object>
+  <object id="6" name="Hispania" type="region">
+   <polygon points="100,480 160,470 210,450 250,430 280,450 300,490 310,550 290,620 260,680 210,720 160,730 110,700 80,650 70,580 80,520"/>
+   <properties>
+    <property name="regionId" value="hispania"/>
+   </properties>
+  </object>
+  <object id="7" name="Italia" type="region">
+   <polygon points="430,410 480,420 530,450 550,490 560,530 540,570 520,600 500,630 480,620 460,590 450,550 440,510 420,470"/>
+   <properties>
+    <property name="regionId" value="italia"/>
+   </properties>
+  </object>
+  <object id="8" name="Sicilia" type="region">
+   <polygon points="480,620 520,610 550,630 560,660 540,690 510,700 480,690 460,660"/>
+   <properties>
+    <property name="regionId" value="sicilia"/>
+   </properties>
+  </object>
+  <object id="9" name="Germania" type="region">
+   <polygon points="400,200 440,190 500,190 560,210 610,250 640,290 620,340 580,370 540,380 500,370 480,340 460,310 440,260"/>
+   <properties>
+    <property name="regionId" value="germania"/>
+   </properties>
+  </object>
+  <object id="10" name="Raetia" type="region">
+   <polygon points="400,370 440,370 480,390 510,410 530,450 510,470 470,460 430,440 390,410"/>
+   <properties>
+    <property name="regionId" value="raetia"/>
+   </properties>
+  </object>
+  <object id="11" name="Pannonia" type="region">
+   <polygon points="530,380 580,370 640,380 680,410 700,440 690,480 650,510 600,510 550,490 510,470 510,420"/>
+   <properties>
+    <property name="regionId" value="pannonia"/>
+   </properties>
+  </object>
+  <object id="12" name="Illyricum" type="region">
+   <polygon points="510,470 550,490 580,520 590,560 570,590 540,600 520,570 500,530 490,500"/>
+   <properties>
+    <property name="regionId" value="illyricum"/>
+   </properties>
+  </object>
+  <object id="13" name="Moesia" type="region">
+   <polygon points="600,510 650,530 710,540 760,550 780,580 760,610 710,620 660,600 620,570 580,560"/>
+   <properties>
+    <property name="regionId" value="moesia"/>
+   </properties>
+  </object>
+  <object id="14" name="Thracia" type="region">
+   <polygon points="760,550 800,560 840,580 860,610 850,650 820,680 780,690 750,680 730,640 730,600"/>
+   <properties>
+    <property name="regionId" value="thracia"/>
+   </properties>
+  </object>
+  <object id="15" name="Graecia" type="region">
+   <polygon points="620,620 680,630 720,660 740,690 750,730 730,770 700,790 670,790 640,760 610,720 590,680 590,640"/>
+   <properties>
+    <property name="regionId" value="graecia"/>
+   </properties>
+  </object>
+  <object id="16" name="Dacia" type="region">
+   <polygon points="680,380 730,370 780,390 820,430 830,470 810,510 770,530 730,540 690,510 670,480 660,440 670,400"/>
+   <properties>
+    <property name="regionId" value="dacia"/>
+   </properties>
+  </object>
+  <object id="17" name="Sarmatia" type="region">
+   <polygon points="640,250 700,240 780,260 850,290 890,330 900,380 880,420 850,450 800,460 740,450 690,420 660,380 640,330 620,290"/>
+   <properties>
+    <property name="regionId" value="sarmatia"/>
+   </properties>
+  </object>
+  <object id="18" name="Scandinavia" type="region">
+   <polygon points="380,30 440,20 510,30 560,50 600,80 620,120 600,170 560,200 510,210 470,200 430,190 380,160 350,120 350,70"/>
+   <properties>
+    <property name="regionId" value="scandinavia"/>
+   </properties>
+  </object>
+  <object id="19" name="Africa" type="region">
+   <polygon points="70,750 160,750 220,730 280,720 340,730 400,740 460,750 520,760 580,770 650,780 720,780 790,770 850,750 890,720 900,680 880,650 840,630 800,620 760,610 720,600 680,600 640,610 600,630 560,620 520,600 480,620 460,660 440,700 420,730 380,740 340,740 300,730 260,720 210,720 160,730 110,730"/>
+   <properties>
+    <property name="regionId" value="africa"/>
+   </properties>
+  </object>
+  <object id="20" name="Scythia" type="region">
+   <polygon points="830,430 900,400 960,380 1020,380 1070,400 1100,450 1120,500 1110,550 1080,590 1030,610 970,610 910,590 870,550 850,510 840,470"/>
+   <properties>
+    <property name="regionId" value="scythia"/>
+   </properties>
+  </object>
+ </objectgroup>
+</map>
