@@ -78,3 +78,10 @@
   `src/simulation/capitals.ts`, `src/simulation/engine.ts`,
   `src/simulation/entities.ts`, `src/simulation/resources.ts`,
   `src/store/gameState.ts`.
+
+- [2026-08-01] Increase HUD font sizes 30-50% (10-13px → 13-18px) for
+  readability and widen panel to 300px. Add "How to play" toggle in the
+  HUD sidebar with a collapsible rules panel explaining goal, turns,
+  movement, combat, capture, units, and cities. Polish map-note with
+  gold left-border accent and larger text.
+  Files modified: `src/game/HUD.tsx`, `src/styles.css`, `src/App.tsx`.

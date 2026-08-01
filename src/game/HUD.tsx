@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { EngineState } from '../simulation/entities';
 import type { Faction } from '../content/scenarios';
 
@@ -12,6 +13,7 @@ export type HudProps = {
 
 export function HUD({ engineState, factions, playerFactionId, onAdvancePhase, onEndTurn }: HudProps) {
   const { turn, phase, currentFaction, log, units, cities, selectedUnitId } = engineState;
+  const [showRules, setShowRules] = useState(false);
 
   const currentFactionName = factions.find((f) => f.id === currentFaction)?.name ?? currentFaction;
   const playerCities = cities.filter((c) => c.owner === playerFactionId);
@@ -66,6 +68,29 @@ export function HUD({ engineState, factions, playerFactionId, onAdvancePhase, on
         <button className="hud-action" onClick={onAdvancePhase} type="button">
           Next Turn
         </button>
+      )}
+
+      {/* How to Play toggle */}
+      <button className="hud-toggle" onClick={() => setShowRules(!showRules)} type="button">
+        {showRules ? '▾ Hide rules' : '▸ How to play'}
+      </button>
+
+      {showRules && (
+        <div className="hud-rules">
+          <p><strong>Goal</strong> — Capture every enemy capital to conquer Europe.</p>
+          <p><strong>Turns</strong> — Each turn cycles through every faction:
+            Production → Your Move → AI Move → Cleanup.</p>
+          <p><strong>Movement</strong> — Click an Army or Scout on the map,
+            then click a glowing adjacent region to move there.</p>
+          <p><strong>Combat</strong> — Moving into an enemy region triggers battle.
+            Attack and defense are randomized. Defenders in cities get +2 defense.</p>
+          <p><strong>Capture</strong> — Defeat all units in a region to seize it.
+            Seize the capital (marked ♔) and you absorb the entire kingdom.</p>
+          <p><strong>Units</strong> — Armies are strong but slow (2 moves/turn).
+            Scouts are fast (3 moves/turn) but weaker.</p>
+          <p><strong>Cities</strong> — Your capital generates food (grows population)
+            and production (builds new units). Each region has resources that boost output.</p>
+        </div>
       )}
 
       {/* Selected unit info */}

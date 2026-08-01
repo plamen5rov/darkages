@@ -442,11 +442,14 @@ h2 {
    ═══════════════════════════════════════ */
 
 .map-note {
-  margin: 14px 0 0;
+  margin: 16px 0 0;
+  padding: 12px 16px;
+  border-left: 3px solid var(--gold);
   color: var(--parchment-dim);
   font-family: var(--ff-body);
-  font-size: 0.9rem;
-  max-width: 800px;
+  font-size: 1.05rem;
+  line-height: 1.5;
+  max-width: 900px;
 }
 
 /* ═══════════════════════════════════════
@@ -515,13 +518,13 @@ h2 {
    ═══════════════════════════════════════ */
 
 .hud-panel {
-  width: 280px;
-  min-width: 280px;
-  padding: 16px;
+  width: 300px;
+  min-width: 300px;
+  padding: 18px;
   border-left: 1px solid rgba(196, 158, 68, 0.2);
   background: rgba(26, 18, 10, 0.75);
   font-family: var(--ff-body);
-  font-size: 12px;
+  font-size: 15px;
   line-height: 1.5;
   color: var(--parchment-dim);
   overflow-y: auto;
@@ -542,14 +545,14 @@ h2 {
 
 .hud-turn-label {
   font-family: var(--ff-heading);
-  font-size: 13px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--gold);
   letter-spacing: 0.05em;
 }
 
 .hud-phase {
-  font-size: 10px;
+  font-size: 14px;
   color: var(--gold-dark);
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -558,14 +561,14 @@ h2 {
 .hud-faction {
   margin: 4px 0 0;
   font-family: var(--ff-heading);
-  font-size: 13px;
+  font-size: 16px;
   color: var(--parchment);
 }
 
 .hud-section-title {
-  margin: 12px 0 6px;
+  margin: 14px 0 8px;
   font-family: var(--ff-heading);
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -578,13 +581,13 @@ h2 {
   display: block;
   width: 100%;
   margin: 0 0 14px;
-  padding: 10px 14px;
+  padding: 12px 16px;
   border: 1px solid var(--gold);
   border-radius: 1px;
   background: rgba(196, 158, 68, 0.12);
   color: var(--parchment);
   font-family: var(--ff-heading);
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -598,25 +601,47 @@ h2 {
   border-color: var(--gold-bright);
 }
 
+.hud-toggle {
+  display: block;
+  width: 100%;
+  margin: 0 0 14px;
+  padding: 8px 16px;
+  border: 1px solid rgba(196, 158, 68, 0.25);
+  border-radius: 1px;
+  background: transparent;
+  color: var(--parchment-dim);
+  font-family: var(--ff-heading);
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.hud-toggle:hover {
+  background: rgba(196, 158, 68, 0.10);
+  color: var(--parchment);
+}
+
 /* Unit info */
 
 .hud-unit-info {
   margin-bottom: 14px;
-  padding: 10px;
+  padding: 12px;
   border: 1px solid rgba(196, 158, 68, 0.15);
   background: rgba(0, 0, 0, 0.2);
   border-radius: 1px;
 }
 
 .hud-unit-info p {
-  margin: 2px 0;
-  font-size: 11px;
+  margin: 3px 0;
+  font-size: 14px;
 }
 
 .hud-hp-bar {
   width: 100%;
-  height: 5px;
-  margin: 4px 0;
+  height: 6px;
+  margin: 5px 0;
   background: rgba(0, 0, 0, 0.4);
   border-radius: 1px;
   overflow: hidden;
@@ -629,7 +654,7 @@ h2 {
 }
 
 .hud-hp-text {
-  font-size: 10px;
+  font-size: 13px;
   color: var(--parchment-dim);
 }
 
@@ -642,8 +667,8 @@ h2 {
 .hud-city-row {
   display: flex;
   justify-content: space-between;
-  padding: 2px 0;
-  font-size: 11px;
+  padding: 3px 0;
+  font-size: 14px;
 }
 
 .hud-city-name {
@@ -652,7 +677,7 @@ h2 {
 
 .hud-city-pop {
   color: var(--parchment-dim);
-  font-size: 10px;
+  font-size: 13px;
 }
 
 /* Units */
@@ -671,8 +696,8 @@ h2 {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 3px 0;
-  font-size: 11px;
+  padding: 4px 0;
+  font-size: 14px;
 }
 
 .hud-faction-row.player {
@@ -684,8 +709,8 @@ h2 {
 }
 
 .hud-faction-swatch {
-  width: 8px;
-  height: 8px;
+  width: 11px;
+  height: 11px;
   border-radius: 1px;
   flex-shrink: 0;
 }
@@ -699,7 +724,7 @@ h2 {
 }
 
 .hud-faction-stats {
-  font-size: 10px;
+  font-size: 13px;
   color: var(--parchment-dim);
   white-space: nowrap;
 }
@@ -712,10 +737,35 @@ h2 {
 }
 
 .hud-log-entry {
-  margin: 3px 0;
-  font-size: 10px;
+  margin: 4px 0;
+  font-size: 13px;
   color: var(--parchment-dim);
   line-height: 1.4;
+}
+
+/* Rules / help panel */
+
+.hud-rules {
+  padding: 12px;
+  margin-bottom: 14px;
+  border: 1px solid rgba(196, 158, 68, 0.2);
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 1px;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.hud-rules p {
+  margin: 6px 0;
+  color: var(--parchment-dim);
+}
+
+.hud-rules strong {
+  color: var(--gold);
+  font-family: var(--ff-heading);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.03em;
 }
 
 /* ═══════════════════════════════════════

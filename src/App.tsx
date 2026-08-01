@@ -149,8 +149,10 @@ function GameScreen() {
       </div>
 
       <p className="map-note">
-        Click your units to select them, then click an adjacent region to move. Capture enemy capitals to claim their kingdom. {scenario.note}
+        Click a unit on the map to select it, then click a glowing region to move.
+        Capture every enemy capital (♔) to win. Open "How to play" in the sidebar for full rules.
       </p>
+      <p className="scenario-subtitle">{scenario.note}</p>
 
       {victory && (
         <div className="victory-overlay">
