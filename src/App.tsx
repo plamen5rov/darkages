@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { LeafletMap } from './game/LeafletMap';
+import { SvgMap } from './game/SvgMap';
 import { getScenario, type Century } from './content/scenarios';
 import { KingdomSelect } from './setup/KingdomSelect';
 import { RulerSelect } from './setup/RulerSelect';
@@ -65,7 +65,7 @@ function GameScreen() {
           New campaign
         </button>
       </div>
-      <LeafletMap
+      <SvgMap
         ownership={ownership}
         factions={scenario.factions}
         playerFactionId={kingdom.id}

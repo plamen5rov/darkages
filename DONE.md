@@ -37,3 +37,10 @@
   Files added: `src/game/LeafletMap.tsx`,
   `src/content/europe_regions.json`.
   Files removed: `src/content/europe.geojson`.
+
+- [2026-08-01] Replace Leaflet map with an inline SVG map rendering GeoJSON
+  regions directly via equirectangular projection. Dark medieval manuscript
+  aesthetic with rhumb lines, compass rose, coastal glow, drop shadows,
+  decorative borders, and noise texture.
+  Files modified: `src/App.tsx`, `src/styles.css`.
+  Files added: `src/game/SvgMap.tsx`.
