@@ -37,7 +37,7 @@ export function RulerSelect() {
           &#8592; Change kingdom
         </button>
         {kingdom.rulers.length > 0 && (
-          <button className="primary-action" onClick={() => startGame()} type="button">
+          <button className="primary-action" onClick={() => { selectRuler(kingdom.rulers[0]); }} type="button">
             Start with {kingdom.rulers[0].name} <span aria-hidden="true">&#8594;</span>
           </button>
         )}

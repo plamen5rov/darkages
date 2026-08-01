@@ -58,3 +58,23 @@
   Files removed: `src/game/GameCanvas.tsx`, `src/game/LeafletMap.tsx`,
   `src/game/geojsonLoader.ts`, `src/game/mapLoader.ts`,
   `src/game/mapRenderer.ts`.
+
+- [2026-08-01] Add turn-based strategy engine with units, combat, capital
+  capture, and region resource system. Replace click-to-capture prototype with
+  full Civ-III-style gameplay: units (army/scout) move through an adjacency
+  graph of 20 European regions, combat uses randomized attack/defense rolls,
+  capturing an enemy capital absorbs their entire kingdom. Turn phases cycle
+  through production (food growth, unit building), player movement, AI movement
+  (simple heuristic), and cleanup. Historical capitals mapped per faction per
+  century (Parisii for Franks, Constantinopolis for Byzantines, Toletum for
+  Visigoths, etc.) with crown markers. Region resources (food/production/luxury)
+  assigned from medieval historical sources. HUD panel shows turn, phase, unit
+  selection, city list, faction stats, and battle log. Victory when all other
+  factions' capitals are captured. Fixed RulerSelect "Start with" button to
+  actually select the ruler.
+  Files modified: `src/App.tsx`, `src/game/SvgMap.tsx`, `src/game/cities.ts`,
+  `src/setup/RulerSelect.tsx`, `src/styles.css`, `.gitignore`.
+  Files added: `src/game/HUD.tsx`, `src/simulation/adjacency.ts`,
+  `src/simulation/capitals.ts`, `src/simulation/engine.ts`,
+  `src/simulation/entities.ts`, `src/simulation/resources.ts`,
+  `src/store/gameState.ts`.

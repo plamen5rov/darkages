@@ -33,4 +33,10 @@ export const cities: City[] = [
   { name: 'Carthago', regionId: 'africa', lon: 10.33, lat: 36.86 },
   { name: 'Caesarea', regionId: 'africa', lon: 2.22, lat: 36.59 },
   { name: 'Tingis', regionId: 'africa', lon: -5.80, lat: 35.77 },
+  { name: 'Papia', regionId: 'italia', lon: 9.15, lat: 45.18 },
+  { name: 'Aquisgranum', regionId: 'germania', lon: 6.08, lat: 50.77 },
+  { name: 'Upsala', regionId: 'scandinavia', lon: 17.63, lat: 59.85 },
+  { name: 'Kiovia', regionId: 'sarmatia', lon: 30.52, lat: 50.45 },
+  { name: 'Sarai', regionId: 'scythia', lon: 47.85, lat: 47.25 },
+  { name: 'Moscovia', regionId: 'sarmatia', lon: 37.62, lat: 55.75 },
 ];

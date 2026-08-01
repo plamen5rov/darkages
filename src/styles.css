@@ -493,6 +493,268 @@ h2 {
 }
 
 /* ═══════════════════════════════════════
+   GAME LAYOUT (map + HUD)
+   ═══════════════════════════════════════ */
+
+.game-layout {
+  display: flex;
+  gap: 0;
+  margin-top: 0;
+}
+
+.game-layout .svg-map-stage {
+  flex: 1;
+  min-width: 0;
+  margin-left: 0;
+  margin-right: 0;
+  width: auto;
+}
+
+/* ═══════════════════════════════════════
+   HUD PANEL
+   ═══════════════════════════════════════ */
+
+.hud-panel {
+  width: 280px;
+  min-width: 280px;
+  padding: 16px;
+  border-left: 1px solid rgba(196, 158, 68, 0.2);
+  background: rgba(26, 18, 10, 0.75);
+  font-family: var(--ff-body);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--parchment-dim);
+  overflow-y: auto;
+  max-height: 680px;
+}
+
+.hud-header {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(196, 158, 68, 0.2);
+}
+
+.hud-turn {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.hud-turn-label {
+  font-family: var(--ff-heading);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 0.05em;
+}
+
+.hud-phase {
+  font-size: 10px;
+  color: var(--gold-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.hud-faction {
+  margin: 4px 0 0;
+  font-family: var(--ff-heading);
+  font-size: 13px;
+  color: var(--parchment);
+}
+
+.hud-section-title {
+  margin: 12px 0 6px;
+  font-family: var(--ff-heading);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+/* HUD button */
+
+.hud-action {
+  display: block;
+  width: 100%;
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  border: 1px solid var(--gold);
+  border-radius: 1px;
+  background: rgba(196, 158, 68, 0.12);
+  color: var(--parchment);
+  font-family: var(--ff-heading);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.hud-action:hover {
+  background: rgba(196, 158, 68, 0.25);
+  color: var(--gold-bright);
+  border-color: var(--gold-bright);
+}
+
+/* Unit info */
+
+.hud-unit-info {
+  margin-bottom: 14px;
+  padding: 10px;
+  border: 1px solid rgba(196, 158, 68, 0.15);
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 1px;
+}
+
+.hud-unit-info p {
+  margin: 2px 0;
+  font-size: 11px;
+}
+
+.hud-hp-bar {
+  width: 100%;
+  height: 5px;
+  margin: 4px 0;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.hud-hp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4a4, #2a2);
+  transition: width 0.3s;
+}
+
+.hud-hp-text {
+  font-size: 10px;
+  color: var(--parchment-dim);
+}
+
+/* Cities */
+
+.hud-cities {
+  margin-bottom: 8px;
+}
+
+.hud-city-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 0;
+  font-size: 11px;
+}
+
+.hud-city-name {
+  color: var(--parchment);
+}
+
+.hud-city-pop {
+  color: var(--parchment-dim);
+  font-size: 10px;
+}
+
+/* Units */
+
+.hud-units {
+  margin-bottom: 8px;
+}
+
+/* Faction overview */
+
+.hud-factions {
+  margin-bottom: 8px;
+}
+
+.hud-faction-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 11px;
+}
+
+.hud-faction-row.player {
+  color: var(--parchment);
+}
+
+.hud-faction-row.current {
+  color: var(--gold-bright);
+}
+
+.hud-faction-swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 1px;
+  flex-shrink: 0;
+}
+
+.hud-faction-name {
+  min-width: 0;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hud-faction-stats {
+  font-size: 10px;
+  color: var(--parchment-dim);
+  white-space: nowrap;
+}
+
+/* Log */
+
+.hud-log {
+  border-top: 1px solid rgba(196, 158, 68, 0.15);
+  padding-top: 8px;
+}
+
+.hud-log-entry {
+  margin: 3px 0;
+  font-size: 10px;
+  color: var(--parchment-dim);
+  line-height: 1.4;
+}
+
+/* ═══════════════════════════════════════
+   VICTORY OVERLAY
+   ═══════════════════════════════════════ */
+
+.victory-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 100;
+}
+
+.victory-card {
+  padding: 48px;
+  border: 1px solid var(--gold);
+  background: var(--bg-panel);
+  text-align: center;
+  box-shadow: 0 0 60px rgba(196, 158, 68, 0.3);
+}
+
+.victory-card h2 {
+  margin-bottom: 12px;
+  font-family: var(--ff-display);
+  font-size: 3rem;
+  color: var(--gold-bright);
+}
+
+.victory-card p {
+  margin-bottom: 24px;
+  font-family: var(--ff-body);
+  font-size: 1rem;
+  color: var(--parchment-dim);
+}
+
+/* ═══════════════════════════════════════
    RESPONSIVE
    ═══════════════════════════════════════ */
 

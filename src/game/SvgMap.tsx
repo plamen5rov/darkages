@@ -1,18 +1,23 @@
-import { useMemo, useCallback, useState } from 'react';
+import { useMemo } from 'react';
 import type { Faction } from '../content/scenarios';
+import type { Unit, City } from '../simulation/entities';
 import rawGeoJson from '../content/europe_regions.json';
 import { cities } from '../game/cities';
 
 const geoJson = rawGeoJson as unknown as GeoJSON.FeatureCollection;
 
-type SvgMapProps = {
+export type SvgMapProps = {
   ownership: Record<string, string>;
   factions: Faction[];
   playerFactionId: string;
-  onCapture: (regionId: string) => void;
+  currentFactionId: string;
+  units: Unit[];
+  cities: City[];
+  selectedUnitId: number | null;
+  movementOptions: string[] | null;
+  onRegionClick: (regionId: string) => void;
+  onUnitClick: (unitId: number) => void;
 };
-
-/* ── constants ── */
 
 const VW = 1000;
 const VH = 680;
@@ -27,8 +32,7 @@ const GOLD_PALE = 'rgba(180,140,90,0.18)';
 const INK = '#2a180d';
 const LABEL_COLOR = '#e8ded0';
 const UNOWNED_FILL = '#3d352b';
-
-/* ── types ── */
+const MOVE_GLOW = 'rgba(80,220,100,0.22)';
 
 type CoordRing = number[][];
 type CoordPolygon = CoordRing[];
@@ -41,8 +45,6 @@ interface RegionBounds {
   minLat: number;
   maxLat: number;
 }
-
-/* ── geo helpers ── */
 
 function computeBounds(features: GeoJSON.Feature[]): RegionBounds {
   let minLon = Infinity;
@@ -127,8 +129,6 @@ function featureCentroid(feature: GeoJSON.Feature, bounds: RegionBounds, vw: num
   return count > 0 ? [sumX / count, sumY / count] : [0, 0];
 }
 
-/* ── decorative generators ── */
-
 function generateRhumbLines(bounds: RegionBounds, vw: number, vh: number, pad: number) {
   const centers: Point[] = [
     [-9, 38],
@@ -172,15 +172,28 @@ function generateWaveArcs(bounds: RegionBounds, vw: number, vh: number, pad: num
   return items;
 }
 
-/* ── component ── */
+function factionColorHex(color: number): string {
+  return `#${color.toString(16).padStart(6, '0')}`;
+}
 
-export function SvgMap({ ownership, factions, playerFactionId, onCapture }: SvgMapProps) {
+export function SvgMap({
+  ownership,
+  factions,
+  playerFactionId,
+  currentFactionId,
+  units,
+  cities: gameCities,
+  selectedUnitId,
+  movementOptions,
+  onRegionClick,
+  onUnitClick,
+}: SvgMapProps) {
   const bounds = useMemo(() => computeBounds(geoJson.features), []);
 
   const factionColorMap = useMemo(() => {
     const map = new Map<string, string>();
     for (const f of factions) {
-      map.set(f.id, `#${f.color.toString(16).padStart(6, '0')}`);
+      map.set(f.id, factionColorHex(f.color));
     }
     return map;
   }, [factions]);
@@ -197,33 +210,56 @@ export function SvgMap({ ownership, factions, playerFactionId, onCapture }: SvgM
   const rhumbLines = useMemo(() => generateRhumbLines(bounds, VW, VH, PAD), [bounds]);
   const waveArcs = useMemo(() => generateWaveArcs(bounds, VW, VH, PAD), [bounds]);
 
-  const handleRegionClick = useCallback(
-    (regionId: string) => {
-      const currentOwner = ownership[regionId];
-      if (currentOwner !== undefined && currentOwner !== playerFactionId) {
-        onCapture(regionId);
-      }
-    },
-    [ownership, playerFactionId, onCapture],
-  );
-
   const projectedCities = useMemo(() => {
     return cities
       .filter((c) => ownership[c.regionId] !== undefined || c.regionId === 'africa')
       .map((city) => {
         const [cx, cy] = project(city.lon, city.lat, bounds, VW, VH, PAD);
-        return { ...city, cx, cy };
+        const gameCity = gameCities.find((gc) => gc.name === city.name && gc.regionId === city.regionId);
+        return { ...city, cx, cy, gameCity };
       });
-  }, [bounds, ownership]);
+  }, [bounds, ownership, gameCities]);
 
-  const ownedRegions = useMemo(() => new Set(Object.keys(ownership)), [ownership]);
-  const [hovered, setHovered] = useState<string | null>(null);
+  const unitDisplay = useMemo(() => {
+    // Group units by regionId for display
+    const regionUnits = new Map<string, Unit[]>();
+    for (const u of units) {
+      const list = regionUnits.get(u.regionId) || [];
+      list.push(u);
+      regionUnits.set(u.regionId, list);
+    }
+
+    const display: { regionId: string; cx: number; cy: number; units: Unit[] }[] = [];
+    for (const rp of regionPaths) {
+      const list = regionUnits.get(rp.regionId);
+      if (list && list.length > 0) {
+        const [cx, cy] = rp.centroid;
+        display.push({ regionId: rp.regionId, cx, cy, units: list });
+      }
+    }
+    return display;
+  }, [units, regionPaths]);
+
+  const movementSet = useMemo(() => new Set(movementOptions || []), [movementOptions]);
+
+  const selectedUnit = useMemo(() => {
+    if (selectedUnitId == null) return null;
+    return units.find((u) => u.id === selectedUnitId) || null;
+  }, [units, selectedUnitId]);
+
+  const ownRegionIds = useMemo(() => {
+    // Regions owned by the currently active player (for UI indications)
+    return new Set(
+      Object.entries(ownership)
+        .filter(([_, owner]) => owner === currentFactionId)
+        .map(([regionId]) => regionId),
+    );
+  }, [ownership, currentFactionId]);
 
   const mapEdge = PAD - 2;
   const innerW = VW - PAD * 2 + 4;
   const innerH = VH - PAD * 2 + 4;
 
-  /* ── compass rose data ── */
   const compassCX = VW - PAD - 35;
   const compassCY = PAD + 35;
 
@@ -235,16 +271,12 @@ export function SvgMap({ ownership, factions, playerFactionId, onCapture }: SvgM
         xmlns="http://www.w3.org/2000/svg"
         preserveAspectRatio="xMidYMid meet"
       >
-        {/* ── defs ── */}
         <defs>
           <filter id="s-region-shadow" x="-6%" y="-6%" width="112%" height="112%">
             <feDropShadow dx="1.5" dy="2" stdDeviation="2.5" floodColor="#000000" floodOpacity="0.5" />
           </filter>
-          <filter id="s-hover-shadow" x="-10%" y="-10%" width="120%" height="120%">
-            <feDropShadow dx="2" dy="3" stdDeviation="4.5" floodColor="#000000" floodOpacity="0.65" />
-          </filter>
-          <filter id="s-coast-glow" x="-4%" y="-4%" width="108%" height="108%">
-            <feDropShadow dx="0" dy="0" stdDeviation="3.5" floodColor={GOLD} floodOpacity="0.12" />
+          <filter id="s-move-glow" x="-10%" y="-10%" width="120%" height="120%">
+            <feDropShadow dx="0" dy="0" stdDeviation="6" floodColor="#32cd32" floodOpacity="0.5" />
           </filter>
           <filter id="s-city-glow" x="-80%" y="-80%" width="260%" height="260%">
             <feGaussianBlur stdDeviation="2" result="blur" />
@@ -253,6 +285,9 @@ export function SvgMap({ ownership, factions, playerFactionId, onCapture }: SvgM
               <feMergeNode in="blur" />
               <feMergeNode in="SourceGraphic" />
             </feMerge>
+          </filter>
+          <filter id="s-coast-glow" x="-4%" y="-4%" width="108%" height="108%">
+            <feDropShadow dx="0" dy="0" stdDeviation="3.5" floodColor={GOLD} floodOpacity="0.12" />
           </filter>
 
           <pattern id="s-noise" x="0" y="0" width="3" height="3" patternUnits="userSpaceOnUse">
@@ -286,11 +321,9 @@ export function SvgMap({ ownership, factions, playerFactionId, onCapture }: SvgM
           </clipPath>
         </defs>
 
-        {/* ═══ OCEAN LAYER ═══ */}
         <rect x={0} y={0} width={VW} height={VH} fill={OCEAN} />
         <rect x={0} y={0} width={VW} height={VH} fill="url(#s-ocean)" />
 
-        {/* rhumb line network */}
         <g clipPath="url(#s-map-clip)">
           {rhumbLines.map((line, i) => (
             <line
@@ -302,8 +335,6 @@ export function SvgMap({ ownership, factions, playerFactionId, onCapture }: SvgM
               strokeOpacity={0.10}
             />
           ))}
-
-          {/* wave arcs (sea decoration) */}
           {waveArcs.map((w, i) => (
             <circle
               key={`wa-${i}`}
@@ -316,10 +347,8 @@ export function SvgMap({ ownership, factions, playerFactionId, onCapture }: SvgM
           ))}
         </g>
 
-        {/* noise */}
         <rect x={0} y={0} width={VW} height={VH} fill="url(#s-noise)" />
 
-        {/* ═══ COASTAL GLOW (behind land) ═══ */}
         <g filter="url(#s-coast-glow)">
           {regionPaths.map((r) => (
             <path
@@ -335,36 +364,48 @@ export function SvgMap({ ownership, factions, playerFactionId, onCapture }: SvgM
           ))}
         </g>
 
-        {/* ═══ LAND MASSES ═══ */}
+        {/* Movement highlight layer */}
+        {movementSet.size > 0 &&
+          regionPaths
+            .filter((r) => movementSet.has(r.regionId))
+            .map((r) => (
+              <path
+                key={`mv-${r.regionId}`}
+                d={r.d}
+                fill={MOVE_GLOW}
+                stroke="#40d040"
+                strokeWidth={2}
+                strokeOpacity={0.6}
+                strokeLinejoin="round"
+                filter="url(#s-move-glow)"
+                style={{ pointerEvents: 'none' }}
+              />
+            ))}
+
+        {/* Land masses */}
         {regionPaths.map((r) => {
           const ownerId = ownership[r.regionId];
           const fill = ownerId ? (factionColorMap.get(ownerId) ?? UNOWNED_FILL) : UNOWNED_FILL;
-          const isHovered = hovered === r.regionId;
-          const isOwned = ownedRegions.has(r.regionId);
+          const isOwned = ownerId !== undefined;
 
           return (
             <g key={r.regionId}>
-              {/* main fill */}
               <path
                 d={r.d}
                 fill={fill}
-                fillOpacity={isHovered ? 1 : (isOwned ? 0.88 : 0.26)}
-                filter={isHovered ? 'url(#s-hover-shadow)' : 'url(#s-region-shadow)'}
+                fillOpacity={isOwned ? 0.88 : 0.26}
+                filter="url(#s-region-shadow)"
                 className="svg-region"
-                onMouseEnter={() => setHovered(r.regionId)}
-                onMouseLeave={() => setHovered(null)}
-                onClick={() => handleRegionClick(r.regionId)}
+                onClick={() => onRegionClick(r.regionId)}
               >
                 <title>{r.name}</title>
               </path>
-              {/* radial light overlay */}
               <path
                 d={r.d}
                 fill="url(#s-region-grad)"
                 fillOpacity={isOwned ? 0.3 : 0.12}
                 style={{ pointerEvents: 'none' }}
               />
-              {/* hatch pattern for owned */}
               {isOwned && (
                 <path
                   d={r.d}
@@ -373,25 +414,23 @@ export function SvgMap({ ownership, factions, playerFactionId, onCapture }: SvgM
                   style={{ pointerEvents: 'none' }}
                 />
               )}
-              {/* stroke */}
               <path
                 d={r.d}
                 fill="none"
                 stroke={STROKE}
-                strokeWidth={isHovered ? 1.8 : 1.0}
+                strokeWidth={isOwned ? 1.0 : 0.8}
                 strokeLinejoin="round"
-                strokeOpacity={isHovered ? 0.9 : (isOwned ? 0.55 : 0.25)}
+                strokeOpacity={isOwned ? 0.55 : 0.25}
                 style={{ pointerEvents: 'none' }}
               />
             </g>
           );
         })}
 
-        {/* ═══ REGION LABELS ═══ */}
+        {/* Region labels */}
         {regionPaths.map((r) => {
           const [cx, cy] = r.centroid;
           if (cx === 0 && cy === 0) return null;
-
           return (
             <g key={`lbl-${r.regionId}`} style={{ pointerEvents: 'none' }}>
               <text
@@ -423,29 +462,143 @@ export function SvgMap({ ownership, factions, playerFactionId, onCapture }: SvgM
           );
         })}
 
-        {/* ═══ CITY MARKERS ═══ */}
-        {projectedCities.map((city) => (
-          <g key={city.name} filter="url(#s-city-glow)" style={{ pointerEvents: 'none' }}>
-            <circle cx={city.cx} cy={city.cy} r={4.5} fill="none" stroke={GOLD} strokeWidth={1.5} strokeOpacity={0.65} />
-            <circle cx={city.cx} cy={city.cy} r={4.5} fill="none" stroke="#5a3a1a" strokeWidth={0.5} strokeOpacity={0.3} />
-            <circle cx={city.cx} cy={city.cy} r={2.2} fill="#f0ddc0" />
-            <circle cx={city.cx} cy={city.cy} r={1.0} fill="#1a120a" />
-            <text
-              x={city.cx}
-              y={city.cy - 9}
-              fill={LABEL_COLOR}
-              fontFamily="'IM Fell English', Georgia, serif"
-              fontSize="7.5"
-              fontStyle="italic"
-              textAnchor="middle"
-              fillOpacity={0.82}
-            >
-              {city.name}
-            </text>
-          </g>
-        ))}
+        {/* City markers */}
+        {projectedCities.map((city) => {
+          const isCapital = city.gameCity?.isCapital ?? false;
+          const cityOwner = city.gameCity?.owner;
+          const ownerColor = cityOwner ? factionColorMap.get(cityOwner) : GOLD;
+          return (
+            <g key={city.name} filter="url(#s-city-glow)" style={{ pointerEvents: 'none' }}>
+              {isCapital ? (
+                <>
+                  <circle cx={city.cx} cy={city.cy} r={6} fill="none" stroke={ownerColor ?? GOLD} strokeWidth={2} strokeOpacity={0.8} />
+                  <circle cx={city.cx} cy={city.cy} r={3} fill={ownerColor ?? GOLD} fillOpacity={0.6} />
+                  <circle cx={city.cx} cy={city.cy} r={1.2} fill={INK} />
+                  <text
+                    x={city.cx}
+                    y={city.cy - 8}
+                    fill={LABEL_COLOR}
+                    fontFamily="'Cinzel Decorative', Georgia, serif"
+                    fontSize="6"
+                    fontWeight="700"
+                    textAnchor="middle"
+                    fillOpacity={0.85}
+                  >
+                    ♔
+                  </text>
+                </>
+              ) : (
+                <>
+                  <circle cx={city.cx} cy={city.cy} r={4.5} fill="none" stroke={GOLD} strokeWidth={1.5} strokeOpacity={0.65} />
+                  <circle cx={city.cx} cy={city.cy} r={4.5} fill="none" stroke="#5a3a1a" strokeWidth={0.5} strokeOpacity={0.3} />
+                  <circle cx={city.cx} cy={city.cy} r={2.2} fill="#f0ddc0" />
+                  <circle cx={city.cx} cy={city.cy} r={1.0} fill={INK} />
+                </>
+              )}
+              <text
+                x={city.cx}
+                y={city.cy - 10}
+                fill={LABEL_COLOR}
+                fontFamily="'IM Fell English', Georgia, serif"
+                fontSize="7.5"
+                fontStyle="italic"
+                textAnchor="middle"
+                fillOpacity={0.82}
+              >
+                {city.name}
+              </text>
+            </g>
+          );
+        })}
 
-        {/* ═══ COMPASS ROSE ═══ */}
+        {/* Unit markers */}
+        {unitDisplay.map(({ regionId, cx, cy, units: regionUnits }) => {
+          const offsetX = units.length > 1 ? 0 : 0;
+          return regionUnits.map((unit, idx) => {
+            const ucx = cx + (units.length > 1 ? (idx - (units.length - 1) / 2) * 14 : 0);
+            const ucy = cy + (units.length > 1 ? 8 : 8);
+            const ownerColor = factionColorMap.get(unit.owner) ?? '#888';
+            const isSelected = unit.id === selectedUnitId;
+            const hpRatio = unit.hp / unit.maxHp;
+            const isPlayerUnit = unit.owner === playerFactionId;
+
+            return (
+              <g
+                key={`unit-${unit.id}`}
+                style={{ cursor: isPlayerUnit ? 'pointer' : 'default' }}
+                onClick={(e) => {
+                  if (isPlayerUnit) {
+                    e.stopPropagation();
+                    onUnitClick(unit.id);
+                  }
+                }}
+              >
+                {/* Selection ring */}
+                {isSelected && (
+                  <circle
+                    cx={ucx}
+                    cy={ucy}
+                    r={10}
+                    fill="none"
+                    stroke={GOLD_LIGHT}
+                    strokeWidth={2}
+                    strokeDasharray="3,2"
+                    strokeOpacity={0.9}
+                  />
+                )}
+                {/* Unit shape */}
+                <rect
+                  x={ucx - 5}
+                  y={ucy - 5}
+                  width={10}
+                  height={10}
+                  fill={ownerColor}
+                  fillOpacity={0.9}
+                  stroke={INK}
+                  strokeWidth={0.8}
+                  rx={unit.type === 'scout' ? 5 : 1}
+                />
+                {/* Type indicator */}
+                {unit.type === 'scout' && (
+                  <text
+                    x={ucx}
+                    y={ucy + 3}
+                    fill={INK}
+                    fontSize="6"
+                    textAnchor="middle"
+                    fontFamily="sans-serif"
+                    fontWeight="bold"
+                    fillOpacity={0.6}
+                  >
+                    ▶
+                  </text>
+                )}
+                {/* HP bar background */}
+                <rect
+                  x={ucx - 6}
+                  y={ucy - 5}
+                  width={12}
+                  height={2}
+                  fill="rgba(0,0,0,0.5)"
+                  rx={0.5}
+                  style={{ pointerEvents: 'none' }}
+                />
+                {/* HP bar fill */}
+                <rect
+                  x={ucx - 6}
+                  y={ucy - 5}
+                  width={12 * hpRatio}
+                  height={2}
+                  fill={hpRatio > 0.6 ? '#4a4' : hpRatio > 0.3 ? '#ca4' : '#c44'}
+                  rx={0.5}
+                  style={{ pointerEvents: 'none' }}
+                />
+              </g>
+            );
+          });
+        })}
+
+        {/* Compass rose */}
         <g transform={`translate(${compassCX}, ${compassCY})`}>
           {[0, 22.5, 45, 67.5, 90, 112.5, 135, 157.5, 180, 202.5, 225, 247.5, 270, 292.5, 315, 337.5].map((deg) => {
             const isPrimary = deg % 90 === 0;
@@ -469,7 +622,6 @@ export function SvgMap({ ownership, factions, playerFactionId, onCapture }: SvgM
           <circle cx={0} cy={0} r={5} fill="none" stroke={GOLD} strokeWidth={1.3} strokeOpacity={0.6} />
           <circle cx={0} cy={0} r={2.5} fill="none" stroke={GOLD_LIGHT} strokeWidth={0.8} strokeOpacity={0.5} />
           <circle cx={0} cy={0} r={0.8} fill={GOLD_LIGHT} fillOpacity={0.4} />
-          {/* north fleur */}
           <g transform="translate(0, -26)" stroke={GOLD} strokeWidth={1.2} strokeOpacity={0.8} fill="none">
             <path d="M0,-8 L-3,0 L0,-2 L3,0 Z" fill={GOLD} fillOpacity={0.4} strokeWidth={0.6} />
           </g>
@@ -483,7 +635,7 @@ export function SvgMap({ ownership, factions, playerFactionId, onCapture }: SvgM
           </text>
         </g>
 
-        {/* ═══ DECORATIVE TRIPLE BORDER ═══ */}
+        {/* Decorative triple border */}
         <rect x={PAD - 9} y={PAD - 9} width={VW - PAD * 2 + 18} height={VH - PAD * 2 + 18}
           fill="none" stroke={STROKE} strokeWidth={0.5} strokeOpacity={0.12} />
         <rect x={PAD - 4} y={PAD - 4} width={VW - PAD * 2 + 8} height={VH - PAD * 2 + 8}
@@ -491,7 +643,7 @@ export function SvgMap({ ownership, factions, playerFactionId, onCapture }: SvgM
         <rect x={PAD} y={PAD} width={VW - PAD * 2} height={VH - PAD * 2}
           fill="none" stroke={GOLD} strokeWidth={1.2} strokeOpacity={0.3} />
 
-        {/* ═══ CORNER ORNAMENTS ═══ */}
+        {/* Corner ornaments */}
         {[0, 1, 2, 3].map((i) => {
           const ox = i % 2 === 0 ? PAD + 10 : VW - PAD - 10;
           const oy = i < 2 ? PAD + 10 : VH - PAD - 10;
@@ -507,7 +659,7 @@ export function SvgMap({ ownership, factions, playerFactionId, onCapture }: SvgM
           );
         })}
 
-        {/* ═══ TITLE CARTOUCHE ═══ */}
+        {/* Title cartouche */}
         <g transform={`translate(${VW / 2}, ${PAD + 16})`} style={{ pointerEvents: 'none' }}>
           <rect x={-110} y={-12} width={220} height={24} rx={1}
             fill="rgba(26, 18, 10, 0.55)" stroke={GOLD} strokeWidth={0.6} strokeOpacity={0.3} />
@@ -524,7 +676,7 @@ export function SvgMap({ ownership, factions, playerFactionId, onCapture }: SvgM
           </text>
         </g>
 
-        {/* ═══ VIGNETTE ═══ */}
+        {/* Vignette */}
         <rect x={0} y={0} width={VW} height={VH} fill="url(#s-vignette)" style={{ pointerEvents: 'none' }} />
       </svg>
     </div>
