@@ -9,19 +9,23 @@
 
 ## Technology
 
-- Use TypeScript, React, Phaser 3, and Zustand.
+- Use TypeScript, React, and Zustand.
 - Use Vite for the development and production build shell.
 - Use plain TypeScript modules for deterministic simulation rules.
-- Phaser renders the simulation and handles map input.
-- React handles setup screens, HUD, menus, and interface overlays.
-- Add Tiled only when replacing the prototype map with the real Europe map.
+- Map is an inline SVG component rendering GeoJSON regions via equirectangular
+  projection. All visual elements (rhumb lines, compass rose, borders,
+  cartouche) are procedurally generated SVG. No external map library.
+- Visual theme: dark medieval manuscript with portolan-chart aesthetics.
+  Fonts (Cinzel Decorative, Cinzel, Uncial Antiqua, IM Fell English) are
+  downloaded locally in `public/fonts/`.
+- React handles all UI: setup screens, HUD, map, and interface overlays.
 - Add EasyStar only when movement needs map pathfinding.
 - Add Dexie/IndexedDB only after the core turn loop works.
 - Add Howler only after gameplay is stable.
 
 ## Architecture
 
-- Keep simulation rules independent of React, Phaser, and Zustand.
+- Keep simulation rules independent of React and Zustand.
 - Keep UI state separate from simulation state.
 - Zustand owns setup and presentation state, not game-rule mutations.
 - Keep content in data modules with stable IDs for game entities.
@@ -36,11 +40,11 @@
 - The first playable slice needs one simplified map, two factions, units,
   movement, turns, combat, capture, and visible ownership changes.
 - The current prototype uses a GeoJSON-authored map with 20 historically
-  accurate European regions. Coordinates are projected from WGS84 to Phaser
-  screen space with an equirectangular projection.
-- Map rendering now uses Leaflet via react-leaflet for proper Mercator
-  projection, tile layers, and SVG polygon rendering. Phaser remains
-  available for future unit and combat rendering.
+  accurate European regions. Coordinates are projected from WGS84 with an
+  equirectangular projection onto an inline SVG rendered by React.
+- Map rendering uses an inline SVG component with a portolan-chart aesthetic:
+  rhumb line network, compass rose, coastal glow, decorative borders, and
+  parchment textures — all procedurally generated.
 - Defer persistence, advanced AI, research, diplomacy, multiplayer, modding,
   deep events, and detailed historical accuracy until the core loop is stable.
 

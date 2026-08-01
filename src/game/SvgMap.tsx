@@ -12,19 +12,23 @@ type SvgMapProps = {
   onCapture: (regionId: string) => void;
 };
 
+/* ── constants ── */
+
 const VW = 1000;
-const VH = 650;
+const VH = 680;
 const PAD = 55;
 
-const OCEAN = '#1a1510';
-const OCEAN_LIGHT = '#231d16';
+const OCEAN = '#0d121a';
+const OCEAN_LIGHT = '#121a26';
 const STROKE = '#c4b4a0';
-const GOLD = '#c49a4a';
+const GOLD = '#c49e44';
 const GOLD_LIGHT = '#dbb86a';
-const GOLD_PALE = 'rgba(180,140,90,0.25)';
-const INK = '#e0d5c4';
+const GOLD_PALE = 'rgba(180,140,90,0.18)';
+const INK = '#2a180d';
 const LABEL_COLOR = '#e8ded0';
 const UNOWNED_FILL = '#3d352b';
+
+/* ── types ── */
 
 type CoordRing = number[][];
 type CoordPolygon = CoordRing[];
@@ -37,6 +41,8 @@ interface RegionBounds {
   minLat: number;
   maxLat: number;
 }
+
+/* ── geo helpers ── */
 
 function computeBounds(features: GeoJSON.Feature[]): RegionBounds {
   let minLon = Infinity;
@@ -75,15 +81,9 @@ function project(lon: number, lat: number, bounds: RegionBounds, vw: number, vh:
   return [x, y];
 }
 
-function polygonToPath(
-  coordinates: CoordPolygon,
-  bounds: RegionBounds,
-  vw: number,
-  vh: number,
-  pad: number,
-): string {
+function polygonToPath(coords: CoordPolygon, bounds: RegionBounds, vw: number, vh: number, pad: number): string {
   const parts: string[] = [];
-  for (const ring of coordinates) {
+  for (const ring of coords) {
     const pts = ring.map(([lon, lat]) => project(lon, lat, bounds, vw, vh, pad));
     const d = pts.map(([x, y], i) => (i === 0 ? `M${x},${y}` : `L${x},${y}`)).join(' ') + ' Z';
     parts.push(d);
@@ -91,17 +91,9 @@ function polygonToPath(
   return parts.join(' ');
 }
 
-function featureCoordsToPath(
-  feature: GeoJSON.Feature,
-  bounds: RegionBounds,
-  vw: number,
-  vh: number,
-  pad: number,
-): string {
+function featurePath(feature: GeoJSON.Feature, bounds: RegionBounds, vw: number, vh: number, pad: number): string {
   const geom = feature.geometry;
-  if (geom.type === 'Polygon') {
-    return polygonToPath(geom.coordinates as CoordPolygon, bounds, vw, vh, pad);
-  }
+  if (geom.type === 'Polygon') return polygonToPath(geom.coordinates as CoordPolygon, bounds, vw, vh, pad);
   if (geom.type === 'MultiPolygon') {
     return (geom.coordinates as unknown as CoordMultiPolygon)
       .map((poly) => polygonToPath(poly, bounds, vw, vh, pad))
@@ -110,13 +102,7 @@ function featureCoordsToPath(
   return '';
 }
 
-function featureCentroid(
-  feature: GeoJSON.Feature,
-  bounds: RegionBounds,
-  vw: number,
-  vh: number,
-  pad: number,
-): Point {
+function featureCentroid(feature: GeoJSON.Feature, bounds: RegionBounds, vw: number, vh: number, pad: number): Point {
   let sumX = 0;
   let sumY = 0;
   let count = 0;
@@ -133,30 +119,28 @@ function featureCentroid(
   };
 
   const geom = feature.geometry;
-  if (geom.type === 'Polygon') {
-    walk(geom.coordinates as CoordPolygon);
-  } else if (geom.type === 'MultiPolygon') {
-    for (const poly of geom.coordinates as unknown as CoordMultiPolygon) {
-      walk(poly);
-    }
+  if (geom.type === 'Polygon') walk(geom.coordinates as CoordPolygon);
+  else if (geom.type === 'MultiPolygon') {
+    for (const poly of geom.coordinates as unknown as CoordMultiPolygon) walk(poly);
   }
 
   return count > 0 ? [sumX / count, sumY / count] : [0, 0];
 }
 
-function generateRhumbLines(bounds: RegionBounds, vw: number, vh: number, pad: number): { x1: number; y1: number; x2: number; y2: number }[] {
+/* ── decorative generators ── */
+
+function generateRhumbLines(bounds: RegionBounds, vw: number, vh: number, pad: number) {
   const centers: Point[] = [
-    [-8, 36],
-    [10, 42],
-    [28, 34],
-    [-4, 54],
-    [20, 50],
+    [-9, 38],
+    [10, 44],
+    [28, 36],
+    [-3, 55],
+    [22, 52],
   ];
 
   const projected = centers.map(([lon, lat]) => project(lon, lat, bounds, vw, vh, pad));
   const lines: { x1: number; y1: number; x2: number; y2: number }[] = [];
-
-  const maxDist = Math.sqrt(vw * vw + vh * vh) * 1.5;
+  const maxDist = Math.sqrt(vw * vw + vh * vh) * 1.6;
 
   for (const [cx, cy] of projected) {
     for (let i = 0; i < 32; i++) {
@@ -170,27 +154,25 @@ function generateRhumbLines(bounds: RegionBounds, vw: number, vh: number, pad: n
   return lines;
 }
 
-function generateSeaDecor(bounds: RegionBounds, vw: number, vh: number, pad: number) {
+function generateWaveArcs(bounds: RegionBounds, vw: number, vh: number, pad: number) {
   const items: { cx: number; cy: number; r: number }[] = [];
-  const oceanCenters: Point[] = [
-    [-12, 45],
-    [8, 48],
-    [20, 52],
-    [28, 38],
-    [-6, 35],
-    [14, 44],
-    [30, 42],
-    [-4, 60],
+  const centers: Point[] = [
+    [-10, 44], [6, 48], [20, 50], [30, 38],
+    [-4, 34], [16, 42], [28, 44], [-2, 60],
+    [12, 46], [24, 48],
   ];
 
-  for (const [lon, lat] of oceanCenters) {
+  for (const [lon, lat] of centers) {
     const [cx, cy] = project(lon, lat, bounds, vw, vh, pad);
-    items.push({ cx, cy, r: 20 + Math.random() * 15 });
-    items.push({ cx: cx + 30, cy: cy + 15, r: 12 + Math.random() * 10 });
+    for (let s = 0; s < 3; s++) {
+      items.push({ cx, cy, r: 22 + s * 18 });
+    }
   }
 
   return items;
 }
+
+/* ── component ── */
 
 export function SvgMap({ ownership, factions, playerFactionId, onCapture }: SvgMapProps) {
   const bounds = useMemo(() => computeBounds(geoJson.features), []);
@@ -207,13 +189,13 @@ export function SvgMap({ ownership, factions, playerFactionId, onCapture }: SvgM
     return geoJson.features.map((feature) => ({
       regionId: (feature.properties as Record<string, string> | null)?.regionId ?? '',
       name: (feature.properties as Record<string, string> | null)?.name ?? '',
-      d: featureCoordsToPath(feature, bounds, VW, VH, PAD),
+      d: featurePath(feature, bounds, VW, VH, PAD),
       centroid: featureCentroid(feature, bounds, VW, VH, PAD),
     }));
   }, [bounds]);
 
   const rhumbLines = useMemo(() => generateRhumbLines(bounds, VW, VH, PAD), [bounds]);
-  const seaCircles = useMemo(() => generateSeaDecor(bounds, VW, VH, PAD), [bounds]);
+  const waveArcs = useMemo(() => generateWaveArcs(bounds, VW, VH, PAD), [bounds]);
 
   const handleRegionClick = useCallback(
     (regionId: string) => {
@@ -241,6 +223,10 @@ export function SvgMap({ ownership, factions, playerFactionId, onCapture }: SvgM
   const innerW = VW - PAD * 2 + 4;
   const innerH = VH - PAD * 2 + 4;
 
+  /* ── compass rose data ── */
+  const compassCX = VW - PAD - 35;
+  const compassCY = PAD + 35;
+
   return (
     <div className="svg-map-stage">
       <svg
@@ -249,17 +235,18 @@ export function SvgMap({ ownership, factions, playerFactionId, onCapture }: SvgM
         xmlns="http://www.w3.org/2000/svg"
         preserveAspectRatio="xMidYMid meet"
       >
+        {/* ── defs ── */}
         <defs>
-          <filter id="region-shadow" x="-5%" y="-5%" width="110%" height="110%">
-            <feDropShadow dx="1.5" dy="2" stdDeviation="2.5" floodColor="#000000" floodOpacity="0.45" />
+          <filter id="s-region-shadow" x="-6%" y="-6%" width="112%" height="112%">
+            <feDropShadow dx="1.5" dy="2" stdDeviation="2.5" floodColor="#000000" floodOpacity="0.5" />
           </filter>
-          <filter id="region-hover-shadow" x="-8%" y="-8%" width="116%" height="116%">
-            <feDropShadow dx="2" dy="3" stdDeviation="4" floodColor="#000000" floodOpacity="0.6" />
+          <filter id="s-hover-shadow" x="-10%" y="-10%" width="120%" height="120%">
+            <feDropShadow dx="2" dy="3" stdDeviation="4.5" floodColor="#000000" floodOpacity="0.65" />
           </filter>
-          <filter id="coast-glow" x="-3%" y="-3%" width="106%" height="106%">
-            <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor={GOLD} floodOpacity="0.15" />
+          <filter id="s-coast-glow" x="-4%" y="-4%" width="108%" height="108%">
+            <feDropShadow dx="0" dy="0" stdDeviation="3.5" floodColor={GOLD} floodOpacity="0.12" />
           </filter>
-          <filter id="city-glow" x="-80%" y="-80%" width="260%" height="260%">
+          <filter id="s-city-glow" x="-80%" y="-80%" width="260%" height="260%">
             <feGaussianBlur stdDeviation="2" result="blur" />
             <feMerge>
               <feMergeNode in="blur" />
@@ -267,81 +254,88 @@ export function SvgMap({ ownership, factions, playerFactionId, onCapture }: SvgM
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
-          <pattern id="noise" x="0" y="0" width="3" height="3" patternUnits="userSpaceOnUse">
+
+          <pattern id="s-noise" x="0" y="0" width="3" height="3" patternUnits="userSpaceOnUse">
             <rect width="3" height="3" fill="transparent" />
-            <rect width="1" height="1" fill="rgba(255,255,255,0.008)" />
-            <rect x="1" y="1" width="1" height="1" fill="rgba(0,0,0,0.012)" />
+            <rect width="1" height="1" fill="rgba(255,255,255,0.006)" />
+            <rect x="1" y="1" width="1" height="1" fill="rgba(0,0,0,0.010)" />
           </pattern>
-          <pattern id="hatch" x="0" y="0" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+
+          <pattern id="s-hatch" x="0" y="0" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
             <rect width="6" height="6" fill="transparent" />
-            <line x1="0" y1="3" x2="6" y2="3" stroke="rgba(255,255,255,0.03)" strokeWidth="0.8" />
+            <line x1="0" y1="3" x2="6" y2="3" stroke="rgba(255,255,255,0.025)" strokeWidth="0.7" />
           </pattern>
-          <radialGradient id="region-grad" cx="50%" cy="40%" r="60%">
-            <stop offset="0%" stopColor="white" stopOpacity="0.08" />
-            <stop offset="100%" stopColor="black" stopOpacity="0.12" />
+
+          <radialGradient id="s-region-grad" cx="50%" cy="40%" r="60%">
+            <stop offset="0%" stopColor="white" stopOpacity="0.07" />
+            <stop offset="100%" stopColor="black" stopOpacity="0.14" />
           </radialGradient>
-          <clipPath id="map-clip">
-            <rect x={mapEdge} y={mapEdge} width={innerW} height={innerH} />
-          </clipPath>
-          <radialGradient id="ocean-radial" cx="50%" cy="45%" r="55%">
-            <stop offset="0%" stopColor={OCEAN_LIGHT} stopOpacity="0.5" />
+
+          <radialGradient id="s-ocean" cx="50%" cy="45%" r="55%">
+            <stop offset="0%" stopColor={OCEAN_LIGHT} stopOpacity="0.6" />
             <stop offset="100%" stopColor={OCEAN} stopOpacity="1" />
           </radialGradient>
+
+          <radialGradient id="s-vignette" cx="50%" cy="50%" r="65%">
+            <stop offset="45%" stopColor="black" stopOpacity="0" />
+            <stop offset="100%" stopColor="black" stopOpacity="0.4" />
+          </radialGradient>
+
+          <clipPath id="s-map-clip">
+            <rect x={mapEdge} y={mapEdge} width={innerW} height={innerH} />
+          </clipPath>
         </defs>
 
+        {/* ═══ OCEAN LAYER ═══ */}
         <rect x={0} y={0} width={VW} height={VH} fill={OCEAN} />
-        <rect x={0} y={0} width={VW} height={VH} fill="url(#ocean-radial)" />
+        <rect x={0} y={0} width={VW} height={VH} fill="url(#s-ocean)" />
 
-        {/* Rhumb lines */}
-        <g clipPath="url(#map-clip)">
+        {/* rhumb line network */}
+        <g clipPath="url(#s-map-clip)">
           {rhumbLines.map((line, i) => (
             <line
-              key={`rhumb-${i}`}
-              x1={line.x1}
-              y1={line.y1}
-              x2={line.x2}
-              y2={line.y2}
+              key={`rh-${i}`}
+              x1={line.x1} y1={line.y1}
+              x2={line.x2} y2={line.y2}
               stroke={GOLD}
               strokeWidth={0.3}
-              strokeOpacity={0.09}
+              strokeOpacity={0.10}
             />
           ))}
 
-          {/* Decorative sea circles */}
-          {seaCircles.map((c, i) => (
+          {/* wave arcs (sea decoration) */}
+          {waveArcs.map((w, i) => (
             <circle
-              key={`sea-${i}`}
-              cx={c.cx}
-              cy={c.cy}
-              r={c.r}
+              key={`wa-${i}`}
+              cx={w.cx} cy={w.cy} r={w.r}
               fill="none"
               stroke={GOLD}
-              strokeWidth={0.4}
-              strokeOpacity={0.06}
+              strokeWidth={0.35}
+              strokeOpacity={0.05}
             />
           ))}
         </g>
 
-        {/* Noise and texture */}
-        <rect x={0} y={0} width={VW} height={VH} fill="url(#noise)" />
+        {/* noise */}
+        <rect x={0} y={0} width={VW} height={VH} fill="url(#s-noise)" />
 
-        {/* Coastal hachure bands (behind regions) */}
-        <g filter="url(#coast-glow)">
+        {/* ═══ COASTAL GLOW (behind land) ═══ */}
+        <g filter="url(#s-coast-glow)">
           {regionPaths.map((r) => (
             <path
-              key={`coast-${r.regionId}`}
+              key={`cst-${r.regionId}`}
               d={r.d}
               fill="none"
               stroke={GOLD_PALE}
-              strokeWidth={5}
+              strokeWidth={4.5}
               strokeLinejoin="round"
-              strokeOpacity={0.15}
+              strokeOpacity={0.14}
               style={{ pointerEvents: 'none' }}
             />
           ))}
         </g>
 
-        {/* Region land masses */}
+        {/* ═══ LAND MASSES ═══ */}
         {regionPaths.map((r) => {
           const ownerId = ownership[r.regionId];
           const fill = ownerId ? (factionColorMap.get(ownerId) ?? UNOWNED_FILL) : UNOWNED_FILL;
@@ -350,11 +344,12 @@ export function SvgMap({ ownership, factions, playerFactionId, onCapture }: SvgM
 
           return (
             <g key={r.regionId}>
+              {/* main fill */}
               <path
                 d={r.d}
                 fill={fill}
-                fillOpacity={isHovered ? 1 : (isOwned ? 0.88 : 0.28)}
-                filter={isHovered ? 'url(#region-hover-shadow)' : 'url(#region-shadow)'}
+                fillOpacity={isHovered ? 1 : (isOwned ? 0.88 : 0.26)}
+                filter={isHovered ? 'url(#s-hover-shadow)' : 'url(#s-region-shadow)'}
                 className="svg-region"
                 onMouseEnter={() => setHovered(r.regionId)}
                 onMouseLeave={() => setHovered(null)}
@@ -362,47 +357,50 @@ export function SvgMap({ ownership, factions, playerFactionId, onCapture }: SvgM
               >
                 <title>{r.name}</title>
               </path>
+              {/* radial light overlay */}
               <path
                 d={r.d}
-                fill="url(#region-grad)"
-                fillOpacity={isOwned ? 0.3 : 0.15}
+                fill="url(#s-region-grad)"
+                fillOpacity={isOwned ? 0.3 : 0.12}
                 style={{ pointerEvents: 'none' }}
               />
+              {/* hatch pattern for owned */}
               {isOwned && (
                 <path
                   d={r.d}
-                  fill="url(#hatch)"
-                  fillOpacity={0.2}
+                  fill="url(#s-hatch)"
+                  fillOpacity={0.18}
                   style={{ pointerEvents: 'none' }}
                 />
               )}
+              {/* stroke */}
               <path
                 d={r.d}
                 fill="none"
                 stroke={STROKE}
                 strokeWidth={isHovered ? 1.8 : 1.0}
                 strokeLinejoin="round"
-                strokeOpacity={isHovered ? 0.9 : (isOwned ? 0.55 : 0.3)}
+                strokeOpacity={isHovered ? 0.9 : (isOwned ? 0.55 : 0.25)}
                 style={{ pointerEvents: 'none' }}
               />
             </g>
           );
         })}
 
-        {/* Region labels */}
+        {/* ═══ REGION LABELS ═══ */}
         {regionPaths.map((r) => {
           const [cx, cy] = r.centroid;
           if (cx === 0 && cy === 0) return null;
 
           return (
-            <g key={`label-${r.regionId}`} style={{ pointerEvents: 'none' }}>
+            <g key={`lbl-${r.regionId}`} style={{ pointerEvents: 'none' }}>
               <text
                 x={cx}
                 y={cy + 0.5}
-                fill="rgba(0,0,0,0.5)"
-                fontFamily="Georgia, 'Times New Roman', serif"
+                fill="rgba(0,0,0,0.55)"
+                fontFamily="'Cinzel', 'IM Fell English', Georgia, serif"
                 fontSize="8.5"
-                fontWeight="bold"
+                fontWeight="700"
                 textAnchor="middle"
                 letterSpacing="0.1em"
               >
@@ -412,12 +410,12 @@ export function SvgMap({ ownership, factions, playerFactionId, onCapture }: SvgM
                 x={cx}
                 y={cy}
                 fill={LABEL_COLOR}
-                fontFamily="Georgia, 'Times New Roman', serif"
+                fontFamily="'Cinzel', 'IM Fell English', Georgia, serif"
                 fontSize="8.5"
-                fontWeight="bold"
+                fontWeight="700"
                 textAnchor="middle"
                 letterSpacing="0.1em"
-                fillOpacity={0.75}
+                fillOpacity={0.78}
               >
                 {r.name}
               </text>
@@ -425,116 +423,109 @@ export function SvgMap({ ownership, factions, playerFactionId, onCapture }: SvgM
           );
         })}
 
-        {/* Cities */}
+        {/* ═══ CITY MARKERS ═══ */}
         {projectedCities.map((city) => (
-          <g key={city.name} filter="url(#city-glow)" style={{ pointerEvents: 'none' }}>
-            <circle cx={city.cx} cy={city.cy} r={4} fill="none" stroke={GOLD} strokeWidth={1.5} strokeOpacity={0.7} />
-            <circle cx={city.cx} cy={city.cy} r={1.8} fill={INK} />
+          <g key={city.name} filter="url(#s-city-glow)" style={{ pointerEvents: 'none' }}>
+            <circle cx={city.cx} cy={city.cy} r={4.5} fill="none" stroke={GOLD} strokeWidth={1.5} strokeOpacity={0.65} />
+            <circle cx={city.cx} cy={city.cy} r={4.5} fill="none" stroke="#5a3a1a" strokeWidth={0.5} strokeOpacity={0.3} />
+            <circle cx={city.cx} cy={city.cy} r={2.2} fill="#f0ddc0" />
+            <circle cx={city.cx} cy={city.cy} r={1.0} fill="#1a120a" />
             <text
               x={city.cx}
-              y={city.cy - 8}
+              y={city.cy - 9}
               fill={LABEL_COLOR}
-              fontFamily="Georgia, serif"
+              fontFamily="'IM Fell English', Georgia, serif"
               fontSize="7.5"
+              fontStyle="italic"
               textAnchor="middle"
-              fillOpacity={0.85}
+              fillOpacity={0.82}
             >
               {city.name}
             </text>
           </g>
         ))}
 
-        {/* Compass rose */}
-        <g transform={`translate(${VW - PAD - 30}, ${PAD + 30})`}>
-          {[0, 45, 90, 135, 180, 225, 270, 315].map((deg, i) => {
-            const long = i % 2 === 0;
+        {/* ═══ COMPASS ROSE ═══ */}
+        <g transform={`translate(${compassCX}, ${compassCY})`}>
+          {[0, 22.5, 45, 67.5, 90, 112.5, 135, 157.5, 180, 202.5, 225, 247.5, 270, 292.5, 315, 337.5].map((deg) => {
+            const isPrimary = deg % 90 === 0;
+            const isSecondary = deg % 45 === 0 && !isPrimary;
             const rad = (deg * Math.PI) / 180;
-            const len = long ? 22 : 14;
-            const x2 = Math.cos(rad) * len;
-            const y2 = Math.sin(rad) * len;
+            const len = isPrimary ? 24 : isSecondary ? 16 : 10;
+            const sw = isPrimary ? 1.4 : isSecondary ? 0.8 : 0.4;
+            const op = isPrimary ? 0.85 : isSecondary ? 0.5 : 0.25;
             return (
               <line
-                key={`cpt-${deg}`}
-                x1={0}
-                y1={0}
-                x2={x2}
-                y2={y2}
-                stroke={long ? GOLD : '#8a7540'}
-                strokeWidth={long ? 1.5 : 0.8}
-                strokeOpacity={long ? 0.85 : 0.5}
+                key={`cr-${deg}`}
+                x1={0} y1={0}
+                x2={Math.cos(rad) * len}
+                y2={Math.sin(rad) * len}
+                stroke={isPrimary ? GOLD : '#8a7540'}
+                strokeWidth={sw}
+                strokeOpacity={op}
               />
             );
           })}
-          <circle cx={0} cy={0} r={3.5} fill="none" stroke={GOLD} strokeWidth={1.2} strokeOpacity={0.7} />
-          <circle cx={0} cy={0} r={1.5} fill={GOLD_LIGHT} fillOpacity={0.6} />
-          <text
-            x={0}
-            y={-27}
-            fill={GOLD}
-            fontFamily="Georgia, serif"
-            fontSize="8"
-            fontWeight="bold"
-            textAnchor="middle"
-            letterSpacing="0.12em"
-            fillOpacity={0.8}
+          <circle cx={0} cy={0} r={5} fill="none" stroke={GOLD} strokeWidth={1.3} strokeOpacity={0.6} />
+          <circle cx={0} cy={0} r={2.5} fill="none" stroke={GOLD_LIGHT} strokeWidth={0.8} strokeOpacity={0.5} />
+          <circle cx={0} cy={0} r={0.8} fill={GOLD_LIGHT} fillOpacity={0.4} />
+          {/* north fleur */}
+          <g transform="translate(0, -26)" stroke={GOLD} strokeWidth={1.2} strokeOpacity={0.8} fill="none">
+            <path d="M0,-8 L-3,0 L0,-2 L3,0 Z" fill={GOLD} fillOpacity={0.4} strokeWidth={0.6} />
+          </g>
+          <text x={0} y={-36} fill={GOLD}
+            fontFamily="'Cinzel Decorative', Georgia, serif"
+            fontSize="11" fontWeight="700"
+            textAnchor="middle" letterSpacing="0.12em"
+            fillOpacity={0.75}
           >
             N
           </text>
         </g>
 
-        {/* Decorative triple border */}
-        <rect
-          x={PAD - 8}
-          y={PAD - 8}
-          width={VW - PAD * 2 + 16}
-          height={VH - PAD * 2 + 16}
-          fill="none"
-          stroke={STROKE}
-          strokeWidth={0.6}
-          strokeOpacity={0.15}
-        />
-        <rect
-          x={PAD - 3}
-          y={PAD - 3}
-          width={VW - PAD * 2 + 6}
-          height={VH - PAD * 2 + 6}
-          fill="none"
-          stroke={STROKE}
-          strokeWidth={1}
-          strokeOpacity={0.25}
-        />
-        <rect
-          x={PAD}
-          y={PAD}
-          width={VW - PAD * 2}
-          height={VH - PAD * 2}
-          fill="none"
-          stroke={GOLD}
-          strokeWidth={1.2}
-          strokeOpacity={0.35}
-        />
+        {/* ═══ DECORATIVE TRIPLE BORDER ═══ */}
+        <rect x={PAD - 9} y={PAD - 9} width={VW - PAD * 2 + 18} height={VH - PAD * 2 + 18}
+          fill="none" stroke={STROKE} strokeWidth={0.5} strokeOpacity={0.12} />
+        <rect x={PAD - 4} y={PAD - 4} width={VW - PAD * 2 + 8} height={VH - PAD * 2 + 8}
+          fill="none" stroke={STROKE} strokeWidth={1} strokeOpacity={0.22} />
+        <rect x={PAD} y={PAD} width={VW - PAD * 2} height={VH - PAD * 2}
+          fill="none" stroke={GOLD} strokeWidth={1.2} strokeOpacity={0.3} />
 
-        {/* Corner ornaments */}
+        {/* ═══ CORNER ORNAMENTS ═══ */}
         {[0, 1, 2, 3].map((i) => {
-          const ox = i % 2 === 0 ? PAD + 8 : VW - PAD - 8;
-          const oy = i < 2 ? PAD + 8 : VH - PAD - 8;
+          const ox = i % 2 === 0 ? PAD + 10 : VW - PAD - 10;
+          const oy = i < 2 ? PAD + 10 : VH - PAD - 10;
           const sx = i % 2 === 0 ? 4 : -4;
           const sy = i < 2 ? 4 : -4;
           return (
-            <g key={`corner-${i}`} stroke={GOLD} strokeWidth={0.6} strokeOpacity={0.3} fill="none">
-              <line x1={ox} y1={oy} x2={ox + sx * 3} y2={oy} />
-              <line x1={ox} y1={oy} x2={ox} y2={oy + sy * 3} />
-              <circle cx={ox} cy={oy} r={2.5} strokeOpacity={0.2} />
+            <g key={`crn-${i}`} stroke={GOLD} strokeWidth={0.5} strokeOpacity={0.25} fill="none">
+              <line x1={ox} y1={oy} x2={ox + sx * 4} y2={oy} />
+              <line x1={ox} y1={oy} x2={ox} y2={oy + sy * 4} />
+              <circle cx={ox} cy={oy} r={3.5} strokeOpacity={0.15} />
+              <circle cx={ox} cy={oy} r={1.2} strokeOpacity={0.3} />
             </g>
           );
         })}
 
-        {/* Vignette overlay */}
-        <radialGradient id="vignette" cx="50%" cy="50%" r="60%">
-          <stop offset="55%" stopColor="black" stopOpacity="0" />
-          <stop offset="100%" stopColor="black" stopOpacity="0.35" />
-        </radialGradient>
-        <rect x={0} y={0} width={VW} height={VH} fill="url(#vignette)" style={{ pointerEvents: 'none' }} />
+        {/* ═══ TITLE CARTOUCHE ═══ */}
+        <g transform={`translate(${VW / 2}, ${PAD + 16})`} style={{ pointerEvents: 'none' }}>
+          <rect x={-110} y={-12} width={220} height={24} rx={1}
+            fill="rgba(26, 18, 10, 0.55)" stroke={GOLD} strokeWidth={0.6} strokeOpacity={0.3} />
+          <line x1={-98} y1={-6} x2={98} y2={-6} stroke={GOLD} strokeWidth={0.3} strokeOpacity={0.15} />
+          <line x1={-98} y1={6} x2={98} y2={6} stroke={GOLD} strokeWidth={0.3} strokeOpacity={0.15} />
+          <text x={0} y={4}
+            fill={GOLD}
+            fontFamily="'Cinzel Decorative', Georgia, serif"
+            fontSize="10.5" fontWeight="700"
+            textAnchor="middle" letterSpacing="0.14em"
+            fillOpacity={0.75}
+          >
+            EUROPE
+          </text>
+        </g>
+
+        {/* ═══ VIGNETTE ═══ */}
+        <rect x={0} y={0} width={VW} height={VH} fill="url(#s-vignette)" style={{ pointerEvents: 'none' }} />
       </svg>
     </div>
   );

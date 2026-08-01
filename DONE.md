@@ -44,3 +44,17 @@
   decorative borders, and noise texture.
   Files modified: `src/App.tsx`, `src/styles.css`.
   Files added: `src/game/SvgMap.tsx`.
+
+- [2026-08-01] Complete visual overhaul: dark vellum manuscript theme with
+  Cinzel Decorative, Uncial Antiqua, and IM Fell English fonts (downloaded
+  locally). Portolan-chart style map with 5-point rhumb network, compass rose,
+  title cartouche, gold triple border, wave ornaments, and vignette. Removed
+  Phaser, Leaflet, and all dead code; bundle now contains only React, Zustand,
+  and inline SVG rendering. Heraldic card styling, wax-seal buttons, gold-accent
+  typography throughout.
+  Files modified: `index.html`, `src/styles.css`, `src/App.tsx`,
+  `src/game/SvgMap.tsx`, `package.json`.
+  Files added: `public/fonts/*.ttf`, `public/assets/compass-rose.svg`.
+  Files removed: `src/game/GameCanvas.tsx`, `src/game/LeafletMap.tsx`,
+  `src/game/geojsonLoader.ts`, `src/game/mapLoader.ts`,
+  `src/game/mapRenderer.ts`.
